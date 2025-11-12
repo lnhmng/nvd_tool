@@ -1,22 +1,23 @@
 <%
-    // Danh sách menu (dựa trên ảnh Tổng quan)
+    // Danh sách menu (dựa trên ảnh Tổng quan và Quản lý lệnh)
     const menuItems = [
-        { name: 'Trang chủ', icon: '🏠', heading: false, key: 'dashboard' },
-        { name: 'Thiết lập hệ thống', icon: null, heading: true },
-        { name: 'Hệ thống thiết lập', icon: '⚙️', heading: false, key: 'system_config' },
-        { name: 'Nhân sự quản lý', icon: '👤', heading: false, key: 'user_management' },
-        { name: 'Dữ liệu quản lý', icon: '🗃️', heading: false, key: 'data_management' },
-        { name: 'Công xưởng quản lý', icon: '🏭', heading: false, key: 'factory_management' },
+        { name: '首页', icon: '🏠', heading: false, key: 'dashboard' }, // Trang chủ
+        { name: '系统设置', icon: null, heading: true }, // Thiết lập hệ thống
+        { name: '基础数据', icon: '🗃️', heading: false, key: 'base_data' }, // Dữ liệu cơ bản
+        { name: '日常管理', icon: '🗓️', heading: false, key: 'daily_management' }, // Quản lý hàng ngày
         { name: 'DMS-MES', icon: null, heading: true },
-        { name: 'Quản lý lệnh sản xuất', icon: '🧾', heading: false, key: 'order_management' },
-        { name: 'Trực quan dữ liệu', icon: '📊', heading: false, key: 'data_visualization' },
-        { name: 'Hệ thống kiểm tra', icon: '🩺', heading: false, key: 'system_check' }
+        { name: '计划管理', icon: '📅', heading: false, key: 'planning_management' }, // Quản lý kế hoạch
+        { name: '生产执行', icon: '⚙️', heading: false, key: 'production_execution' }, // Thực hiện sản xuất
+        { name: '工单管理', icon: '🧾', heading: false, key: 'order_management' }, // Quản lý công lệnh
+        { name: '质量管理', icon: '🏅', heading: false, key: 'quality_management' }, // Quản lý chất lượng
+        { name: '绩效管理', icon: '📈', heading: false, key: 'performance_management' } // Quản lý hiệu suất
+        // ... Thêm các mục khác nếu cần ...
     ];
 %>
 
 <nav class="sidebar">
     <div class="logo">
-        <span>DMS INTELLIGENT</span>
+        <img src="/images/logo.png" alt="DMS Logo" style="height: 30px;"> <span>DMS INTELLIGENT</span>
     </div>
     <ul>
         <% menuItems.forEach(item => { %>

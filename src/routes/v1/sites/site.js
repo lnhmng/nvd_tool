@@ -12,4 +12,6 @@ site.get('/', (req, res) => {
 
 site.get('/admin', webController.getDashboard)
 
+site.get('/manage', webController.getOrderManagement)
+
 export default site;

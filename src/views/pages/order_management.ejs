@@ -1,0 +1,74 @@
+<%
+    // Giả định dữ liệu được truyền vào từ Controller (WebController.getOrderManagement)
+    // orders, title, activeMenu, user đã được Controller cung cấp
+%>
+
+<% layout = 'layouts/main_layout' %>
+
+<div class="order-management-page">
+    <div class="page-header-tabs">
+        <span class="tab-item active">工单管理</span>
+        <span class="tab-item">工程管理</span>
+    </div>
+
+    <div class="filter-area order-management-filters">
+        <div class="filter-row">
+            <div class="filter-group"><label>工单号</label><input type="text" placeholder="请输入工单号"></div>
+            <div class="filter-group"><label>工单状态</label><select><option>请选择工单状态</option></select></div>
+            <div class="filter-group"><label>产品料号</label><input type="text" placeholder="请输入产品料号"></div>
+            <div class="filter-group"><button class="btn-collapse">收起 ▲</button></div>
+        </div>
+        <div class="filter-row filter-actions">
+            <button class="btn btn-primary">查询</button>
+            <button class="btn btn-secondary">清空</button>
+        </div>
+    </div>
+
+    <div class="action-bar table-actions">
+        <div class="action-left">
+            <button class="btn-icon">➕ 新增</button>
+            </div>
+        <div class="action-right">
+            <span class="icon-text">设置</span>
+            <span class="icon-text">设置</span>
+        </div>
+    </div>
+
+    <div class="data-table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th><input type="checkbox"></th>
+                    <th>序号</th>
+                    <th>工单号</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody>
+                <% orders.forEach((order) => { %>
+                    <tr>
+                        <td><input type="checkbox"></td>
+                        <td><%= order.id %></td>
+                        <td><%= order.no %></td>
+                        <td><%= order.process %></td>
+                        <td><a href="#">修改</a> | <a href="#">删除</a></td>
+                    </tr>
+                <% }); %>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="pagination">
+        </div>
+
+    <div class="detail-tabs">
+        <span class="detail-tab active">基本信息</span>
+        <span class="detail-tab">物料清单</span>
+        </div>
+
+    <div class="detail-content">
+        <div class="detail-row">
+            <div class="detail-item"><label>工单号</label> <span>*</span></div>
+            </div>
+    </div>
+</div>
