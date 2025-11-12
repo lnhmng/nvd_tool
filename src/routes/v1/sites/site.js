@@ -14,4 +14,6 @@ site.get('/admin', webController.getDashboard)
 
 site.get('/manage', webController.getOrderManagement)
 
+site.get('/login', webController.login)
+
 export default site;

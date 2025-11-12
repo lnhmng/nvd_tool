@@ -47,6 +47,10 @@ class WebController {
         // Render file order_management.ejs
         res.render('pages/order_management', data);
     }
+
+    static async login(req, res) {
+        res.render('pages/login');
+    }
 }
 
 export default WebController;

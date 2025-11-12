@@ -17,10 +17,7 @@ const __dirname = path.resolve();
 
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'src' ,'views'));
-
-app.use(express.static(path.join(__dirname, 'src', 'public')));
-
-console.log('dirname', __dirname)
+app.use('/public', express.static(path.join(__dirname, 'src', 'public')));
 
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 app.use(bodyParser.json({ limit: CONSTANTS.MAX_JSON_BODY_REQUEST }));
