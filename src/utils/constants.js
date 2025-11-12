@@ -10,5 +10,7 @@ export const CONSTANTS = Object.freeze({
     API_SYS: '/sys',
        
     API_TOOLS: '/tools',   
-        API_TABLE_INFO: '/export' 
+        API_TABLE_INFO: '/export',
+
+    API_SITES: '/sites'
 });

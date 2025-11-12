@@ -1,0 +1,32 @@
+<%
+    // Danh sách menu (dựa trên ảnh Tổng quan)
+    const menuItems = [
+        { name: 'Trang chủ', icon: '🏠', heading: false, key: 'dashboard' },
+        { name: 'Thiết lập hệ thống', icon: null, heading: true },
+        { name: 'Hệ thống thiết lập', icon: '⚙️', heading: false, key: 'system_config' },
+        { name: 'Nhân sự quản lý', icon: '👤', heading: false, key: 'user_management' },
+        { name: 'Dữ liệu quản lý', icon: '🗃️', heading: false, key: 'data_management' },
+        { name: 'Công xưởng quản lý', icon: '🏭', heading: false, key: 'factory_management' },
+        { name: 'DMS-MES', icon: null, heading: true },
+        { name: 'Quản lý lệnh sản xuất', icon: '🧾', heading: false, key: 'order_management' },
+        { name: 'Trực quan dữ liệu', icon: '📊', heading: false, key: 'data_visualization' },
+        { name: 'Hệ thống kiểm tra', icon: '🩺', heading: false, key: 'system_check' }
+    ];
+%>
+
+<nav class="sidebar">
+    <div class="logo">
+        <span>DMS INTELLIGENT</span>
+    </div>
+    <ul>
+        <% menuItems.forEach(item => { %>
+            <% if (item.heading) { %>
+                <li class="menu-heading"><%= item.name %></li>
+            <% } else { %>
+                <li class="menu-item <%= item.key === activeMenu ? 'active' : '' %>">
+                    <%= item.icon %> <%= item.name %>
+                </li>
+            <% } %>
+        <% }); %>
+    </ul>
+</nav>

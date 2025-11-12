@@ -1,0 +1,49 @@
+<%
+    // Giả định dữ liệu được truyền vào từ Controller
+    const statusData = {
+        pendingCount: 0,
+        completeCount: 0,
+        totalComplete: 0,
+        currentTime: new Date().toLocaleTimeString('vi-VN', {hour: '2-digit', minute: '2-digit', second: '2-digit'}),
+        currentDate: new Date().toLocaleDateString('vi-VN', { year: 'numeric', month: 'numeric', day: 'numeric' })
+    };
+    
+    // Nếu bạn đang sử dụng thư viện ejs-locals hoặc tương tự để tự động nhúng layout:
+    // layout = 'layouts/main_layout';
+%>
+
+<div class="dashboard-content">
+    <div class="sub-tabs">
+        <span class="sub-tab active">Bàn làm việc</span>
+        <span class="sub-tab">Quản lý kho</span>
+    </div>
+
+    <div class="status-bar">
+        <div class="status-card pending">
+            <span class="icon">📜</span>
+            <p>Danh sách chờ</p>
+            <p class="count"><%= statusData.pendingCount %> Miếng</p>
+        </div>
+        <div class="status-card complete">
+            <span class="icon">✅</span>
+            <p>Danh sách đã hoàn thành</p>
+            <p class="count"><%= statusData.completeCount %> Miếng</p>
+        </div>
+        <div class="status-card total">
+            <span class="icon">🗓️</span>
+            <p>Tổng danh sách đã hoàn thành</p>
+            <p class="count"><%= statusData.totalComplete %> Miếng</p>
+        </div>
+        <div class="time-qr">
+            <p>Thời gian</p>
+            <p class="datetime"><%= statusData.currentDate %></p>
+            <p class="datetime"><%= statusData.currentTime %></p>
+                    </div>
+    </div>
+
+    <hr>
+
+    <div class="process-map">
+                <p class="map-title">SƠ ĐỒ HỆ THỐNG QUẢN LÝ THÔNG MINH</p>
+    </div>
+</div>

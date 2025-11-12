@@ -1,0 +1,93 @@
+/* public/css/styles.css */
+:root {
+    --color-primary: #21437A; /* Xanh đậm */
+    --color-app-bg: #F0F2F5; /* Nền xám nhạt */
+    --color-sidebar-active: #C3D5E8; /* Xanh nhạt cho menu active */
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: Arial, sans-serif;
+}
+
+/* Ứng Dụng & Bố Cục Chính */
+.app-container {
+    display: grid;
+    grid-template-areas: "header header" "sidebar main";
+    grid-template-rows: 45px 1fr; /* Chiều cao header */
+    grid-template-columns: 250px 1fr; /* Chiều rộng sidebar */
+    height: 100vh;
+    background-color: var(--color-app-bg);
+}
+
+/* Header */
+.top-header {
+    grid-area: header;
+    background-color: var(--color-primary);
+    color: white;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 20px;
+    font-size: 14px;
+}
+.top-menu { display: flex; align-items: center; gap: 15px; }
+
+/* Sidebar */
+.sidebar {
+    grid-area: sidebar;
+    background-color: #FFFFFF;
+    color: #333;
+    border-right: 1px solid #ddd;
+    overflow-y: auto;
+    padding-top: 20px;
+}
+.sidebar .logo {
+    padding: 10px 20px;
+    font-weight: bold;
+    color: var(--color-primary);
+}
+.sidebar ul { list-style: none; }
+.menu-item, .menu-heading { padding: 8px 20px; font-size: 14px; cursor: pointer; }
+.menu-item:hover { background-color: #f0f0f0; }
+.menu-item.active { 
+    background-color: var(--color-sidebar-active);
+    color: var(--color-primary);
+    border-left: 5px solid var(--color-primary);
+    font-weight: bold;
+}
+.menu-heading { color: #888; font-size: 12px; padding-top: 15px; }
+
+/* Main Content */
+.main-content {
+    grid-area: main;
+    padding: 20px;
+    overflow-y: auto;
+}
+
+/* Dashboard Status Cards */
+.status-bar { display: flex; gap: 20px; margin-bottom: 20px; }
+.status-card, .time-qr {
+    background-color: white;
+    padding: 15px;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    flex-grow: 1;
+    text-align: center;
+}
+.status-card .count { font-size: 24px; font-weight: bold; color: var(--color-primary); }
+.time-qr { 
+    width: 200px; 
+    flex-grow: 0;
+    text-align: right;
+}
+.process-map {
+    background-color: white;
+    min-height: 70vh;
+    padding: 20px;
+    border-radius: 8px;
+    text-align: center;
+}
+/* ... Thêm CSS cho ảnh 2 (order_management.ejs) vào file này ... */
