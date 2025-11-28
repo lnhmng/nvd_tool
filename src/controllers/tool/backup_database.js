@@ -1,17 +1,23 @@
-import ToolRepository from "../../repositories/tool/get-table-info.js";
+import fs from 'fs/promises';
+import path from 'path';
+import { fileURLToPath } from 'url'; 
+import ToolRepository from "../../repositories/tool/backup_repository.js";
 import ExcelJS from "exceljs";
 
 import ReturnResponseUtil from "../../utils/return-response-util.js";
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 class ToolController {
+
     /**
-     * Function Controller:
-     * 
+     * Function Controller: Get column headers from a table in the database
      */
 
-    static async get_table_info(req, res) {
+    static async get_column_header_controller(req, res) {
         try {
-            const results = await ToolRepository.get_table_info();
+            const results = await ToolRepository.get_column_header_repository();
 
             if (!results || results.length === 0) {
                 return ReturnResponseUtil.returnResponse(res, 404, false, "Not found", []);
@@ -121,6 +127,69 @@ class ToolController {
         }
     }
 
+    /**
+     * Function Controller: Get all stored procedures source code.
+     */
+
+    static async get_procedures_controller(req, res) {
+        try {
+            const rawResults = await ToolRepository.get_procedures_repository();
+
+            if (!rawResults || rawResults.length === 0) {
+                return ReturnResponseUtil.returnResponse(res, 404, false, "Not found", []);
+            }
+
+            const groupedProcedures = rawResults.reduce((acc, row) => {
+                const key = `${row.schemaName}.${row.procedureName}`;
+
+                if (!acc[key]) {
+                    acc[key] = {
+                        schemaName: row.schemaName,
+                        procedureName: row.procedureName,
+                        sourceCodeLines: [] 
+                    };
+                }
+                
+                acc[key].sourceCodeLines.push(row.text);
+                
+                return acc;
+            }, {});
+
+            const finalResults = Object.values(groupedProcedures).map(proc => ({
+                schemaName: proc.schemaName,
+                procedureName: proc.procedureName,
+                fullSource: proc.sourceCodeLines.join('') 
+            }));
+
+            const outputFolderName = 'procedure_backups';
+            const outputDir = path.join(__dirname, '..', '..', outputFolderName); 
+
+            await fs.mkdir(outputDir, { recursive: true });
+            const savePromises = finalResults.map(proc => {
+                const filename = `${proc.schemaName}.${proc.procedureName}.sql`;
+                const filePath = path.join(outputDir, filename);
+                const fileContent = proc.fullSource;
+
+                return fs.writeFile(filePath, fileContent)
+                    .then(() => {
+                        console.log(`[File Save Success]: Đã lưu ${filename}`);
+                    })
+                    .catch(err => {
+                        console.error(`[File Save Error] Lỗi khi lưu ${filename}:`, err);
+                    });
+            });
+
+
+            await Promise.all(savePromises);
+            return ReturnResponseUtil.returnResponse(res, 200, true, 
+                 `Đã lưu thành công ${finalResults.length} thủ tục vào thư mục: ${outputFolderName} trong src/`, 
+                 finalResults);
+
+        } catch (error) {
+            console.error("Server error:", error);
+            return ReturnResponseUtil.returnResponse(res, 500, false, "Server Error");
+        }
+    }
 }
 
 export default ToolController;

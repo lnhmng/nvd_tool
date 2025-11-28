@@ -7,7 +7,6 @@ import { CONSTANTS } from './src/utils/constants.js';
 import routes from './src/routes/index.js';
 import path from "path";
 
-import { swaggerUi, swaggerSpec } from "./src/services/swagger.js";
 import sequelize from "./src/configs/oracle-connect.js"; 
 
 dotenv.config();
@@ -19,7 +18,6 @@ app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'src' ,'views'));
 app.use('/public', express.static(path.join(__dirname, 'src', 'public')));
 
-app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 app.use(bodyParser.json({ limit: CONSTANTS.MAX_JSON_BODY_REQUEST }));
 app.use(cors({ origin: "*" }));
 app.use('/', routes);
