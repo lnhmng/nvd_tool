@@ -2,7 +2,7 @@ import express from 'express';
 
 import { CONSTANTS } from '../../../utils/constants.js';
 
-import ToolController from '../../../controllers/tool/backup_database.js';
+import ToolController from '../../../controllers/tool/backup_controller.js';
 
 const tool = express.Router();
 

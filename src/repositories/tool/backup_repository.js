@@ -59,7 +59,6 @@ class ToolRepository {
                 WHERE
                     obj.OBJECT_TYPE = 'PROCEDURE'
                     AND obj.OWNER = 'SFIS1'
-                -- Bỏ điều kiện giới hạn dòng code (src.LINE <= MIN(line) WHERE TEXT LIKE 'BEGIN%')
                 ORDER BY
                     obj.OWNER,
                     obj.OBJECT_NAME,
