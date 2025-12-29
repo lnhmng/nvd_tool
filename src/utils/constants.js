@@ -6,6 +6,7 @@ export const CONSTANTS = Object.freeze({
     API_NVD: '/nvd',
         API_RESULT: '/result',
         API_WEIGHT_LOG: '/weight',
+        API_SN_INFORMATION: '/sn-information',
 
     API_SYS: '/sys',
        

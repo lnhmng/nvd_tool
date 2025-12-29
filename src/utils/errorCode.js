@@ -1,0 +1,16 @@
+const ErrorCode = {
+    SUCCESS: "SUCCESS",
+
+    INVALID_MODEL: "INVALID_MODEL",
+    INVALID_PAGING: "INVALID_PAGING",
+
+    NO_DATA: "NO_DATA",
+    INSERT_FAILED: "INSERT_FAILED",
+
+    SERVER_ERROR: "SERVER_ERROR",
+    INVALID_TOKEN: "INVALID_TOKEN"
+};
+
+export default ErrorCode;
+
+
