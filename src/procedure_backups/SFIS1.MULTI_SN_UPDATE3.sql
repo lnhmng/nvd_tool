@@ -1,0 +1,77 @@
+PROCEDURE                         MULTI_SN_UPDATE3(EMP IN VARCHAR2,LINE IN VARCHAR2, SECTION IN VARCHAR2,
+W_STATION IN VARCHAR2, DATETIME IN DATE, EC IN VARCHAR2, DATA IN VARCHAR2,
+MO_DATE IN VARCHAR2, W_SECTION IN NUMBER, MYGROUP IN VARCHAR2, RES OUT VARCHAR2
+)AS
+ERROR_FLAG VARCHAR2(1);
+E_ERR          EXCEPTION;
+E_NULL         EXCEPTION;
+CURSOR CUR1 IS
+   SELECT SERIAL_NUMBER FROM SFISM4.R_PCB_DATECODE_T
+   WHERE  SERIAL_NUMBER=DATA;
+ROW1 CUR1%ROWTYPE;
+BEGIN
+        --add by liujiang20240531 ,for deal with SFIS1.CHECK_PTH_MATERIAL_V1 can`t be execute single in station_type 121  by SMO
+        SFIS1.CHECK_PTH_MATERIAL_V1(LINE,MYGROUP,DATA,RES);
+        IF RES<>'OK' THEN
+           RAISE E_NULL;
+        END IF;
+        
+        --CHECK_ROUTE(LINE,MYGROUP,DATA,RES);
+        SFIS1.CHECK_SN(DATA,RES);
+        IF RES<>'OK' THEN
+           RAISE E_NULL;
+        END IF;
+
+        OPEN CUR1;
+        FETCH CUR1 INTO ROW1;
+        IF CUR1%NOTFOUND THEN
+           TEST_INPUT_Z(EMP,LINE,SECTION,W_STATION,DATETIME,EC,DATA,MO_DATE,W_SECTION,MYGROUP,RES);
+           IF RES<>'OK' THEN
+              RAISE E_NULL ;
+           END IF;
+        ELSE
+           IF EC <>'N/A'  THEN
+              TEST_INPUT_Z(EMP,LINE,SECTION,W_STATION,DATETIME,EC,DATA,MO_DATE,W_SECTION,MYGROUP,RES);
+              IF RES<>'OK' THEN
+                 RAISE E_NULL ;
+              END IF;
+           ELSE
+                  LOOP
+               EXIT WHEN CUR1%NOTFOUND;
+                    SELECT ERROR_FLAG INTO ERROR_FLAG FROM SFISM4.R_WIP_TRACKING_T WHERE SERIAL_NUMBER = DATA;
+                    IF ERROR_FLAG = '1' THEN
+                        RAISE E_ERR;
+                    END IF;
+                    --CHECK_ROUTE(LINE,MYGROUP,DATA,RES);
+                    CHECK_ROUTE(LINE,MYGROUP,DATA,RES);  --modify by wenliang lei 20130705
+                    IF RES<>'OK' THEN
+                       RES:=ROW1.SERIAL_NUMBER||'--'||RES;
+                       RAISE E_NULL;
+                    END IF;
+               FETCH CUR1 INTO ROW1;
+               END LOOP;
+               CLOSE CUR1;
+
+               OPEN CUR1;
+               LOOP
+               FETCH CUR1 INTO ROW1;
+               EXIT WHEN CUR1%NOTFOUND;
+                   TEST_INPUT_Z(EMP,LINE,SECTION,W_STATION,DATETIME,EC,DATA,MO_DATE,W_SECTION,MYGROUP,RES);
+                   IF RES<>'OK' THEN
+                      RES:=DATA||'--'||RES;
+                      RAISE E_NULL ;
+                   END IF;
+               END LOOP;
+               CLOSE CUR1;
+           END IF;
+        END IF;
+
+EXCEPTION
+    WHEN E_NULL THEN NULL;
+    WHEN E_ERR THEN
+        RES:='EXIST FAIL BARCODE';
+        CLOSE CUR1;
+    WHEN OTHERS THEN
+        RES:='MULTI ERROR'||SUBSTR(SQLERRM,1,10);
+   END;
+   /*** CREATE BY Solomon 2004-08-10 for Multi-SN**/

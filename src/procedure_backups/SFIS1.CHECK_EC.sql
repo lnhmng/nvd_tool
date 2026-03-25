@@ -1,0 +1,24 @@
+PROCEDURE       CHECK_EC(DATA IN VARCHAR2,
+RES OUT VARCHAR2) IS
+
+C_EC VARCHAR2(25);
+
+BEGIN
+
+   SELECT ERROR_CODE INTO C_EC FROM C_ERROR_CODE_T
+      WHERE ERROR_CODE = DATA
+      GROUP BY ERROR_CODE;
+      
+  IF SUBSTR(DATA,1,2) = '98' OR SUBSTR(DATA,1,1) = 'E' THEN
+  
+   RES:='OK';
+   ELSE
+   RES:='EC ERROR';
+   END IF;
+
+exception
+
+   when others then
+      RES:=' NO EC ';
+
+END;

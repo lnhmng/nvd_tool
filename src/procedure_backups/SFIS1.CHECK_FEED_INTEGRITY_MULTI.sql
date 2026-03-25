@@ -1,0 +1,82 @@
+PROCEDURE             CHECK_FEED_INTEGRITY_MULTI
+(SN         IN     VARCHAR2,
+SECTION     IN     VARCHAR2,
+MYGROUP     IN     VARCHAR2,
+W_STATION   IN     VARCHAR2,
+LINE        IN     VARCHAR2,
+RES         OUT    VARCHAR2)
+
+AS
+   V_MODELNAME   VARCHAR2 (32);
+   V_COUNT       NUMBER;
+   E_EXCEPTION   EXCEPTION;
+   E_COUNT       EXCEPTION;
+
+   CURSOR MACHINE
+   IS
+        SELECT MACHINE_CODE
+          FROM SFIS1.C_SMTBIND_CONFIG_T
+         WHERE     LINE_NAME = LINE
+               AND SECTION_NAME = SECTION
+               AND MODEL_NAME = V_MODELNAME
+      ORDER BY MACHINE_CODE;
+
+   V_ROW         MACHINE%ROWTYPE;
+BEGIN
+   SELECT COUNT (*)
+     INTO V_COUNT
+     FROM SFISM4.R_WIP_TRACKING_T
+    WHERE SERIAL_NUMBER = SN;
+
+   IF V_COUNT = 0
+   THEN
+      RAISE E_COUNT;
+   END IF;
+
+   SELECT MODEL_NAME
+     INTO V_MODELNAME
+     FROM SFISM4.R_WIP_TRACKING_T
+    WHERE SERIAL_NUMBER = SN;
+
+   OPEN MACHINE;
+
+   FETCH MACHINE INTO V_ROW;
+
+   IF MACHINE%NOTFOUND
+   THEN
+      RES := 'NO MACHINE CODE FOUND';
+      RAISE E_EXCEPTION;
+   END IF;
+
+   LOOP
+      EXIT WHEN MACHINE%NOTFOUND;
+      SFIS1.CHECK_FEED_INTEGRITY_V2 (SN,
+                              SECTION,
+                              V_ROW.MACHINE_CODE,
+                              W_STATION,
+                              LINE,
+                              RES);
+
+      IF RES <> 'OK'
+      THEN
+         CLOSE MACHINE;
+
+         RAISE E_EXCEPTION;
+      END IF;
+
+      FETCH MACHINE INTO V_ROW;
+   END LOOP;
+
+   CLOSE MACHINE;
+EXCEPTION
+   WHEN E_COUNT
+   THEN
+      RES := 'NO SN';
+   WHEN E_EXCEPTION
+   THEN
+      ROLLBACK;
+   WHEN OTHERS
+   THEN
+      ROLLBACK;
+      RES := 'OTHER ERROR ' || SUBSTR (SQLERRM, 1, 100);
+END;

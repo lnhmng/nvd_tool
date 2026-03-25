@@ -58,7 +58,7 @@ class ToolRepository {
                     AND obj.OBJECT_TYPE = src.TYPE
                 WHERE
                     obj.OBJECT_TYPE = 'PROCEDURE'
-                    AND obj.OWNER = 'SFIS1'
+                    AND obj.OWNER IN ('SFIS1', 'SFISM4')
                 ORDER BY
                     obj.OWNER,
                     obj.OBJECT_NAME,

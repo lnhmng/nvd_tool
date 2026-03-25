@@ -1,0 +1,13 @@
+PROCEDURE CHECK_SN_ORDER(ORD IN VARCHAR2,RES OUT VARCHAR2)
+IS
+BEGIN
+    IF ORD = 'ORDER' THEN
+	    RES := 'OK';
+	ELSE
+    	IF ORD = 'NORDER' THEN
+    	    RES := 'OK';
+    	ELSE
+    	    RES := 'ORDER ERROR';
+    	END IF;
+	END IF;
+END;

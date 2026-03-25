@@ -1,0 +1,122 @@
+PROCEDURE                      IAOITEST_V2
+/***********************************************************
+Author: Alex Wang                                          **
+Date: 2010-10-26                                          **
+Description: TAOI test (attached boards can't pass route) **
+************************************************************/
+(
+  BARCODE          IN  VARCHAR2,
+  MACHINE_CODE     IN  VARCHAR2,
+  EMP              IN  VARCHAR2,
+  FAILDESC         IN  VARCHAR2,
+  RESULT           IN  VARCHAR2,
+  RETEST           IN  VARCHAR2,
+  EC_CNT           IN  NUMBER,
+  EC_LIST          IN  ECLIST,
+  RES              OUT VARCHAR2
+)
+
+IS
+
+p_DATE             DATE;
+p_RESULT           VARCHAR2(10);
+p_RETEST           VARCHAR2(10);
+p_GROUP            VARCHAR2(50);
+p_LINE             VARCHAR2(50);
+p_STATION          VARCHAR2(50);
+p_SECTION          VARCHAR2(50);
+ERROR_CODE         VARCHAR2(1000);
+
+v_EC_CNT           NUMBER(3,0);
+
+p_WORKSECT         NUMBER(2,0);
+p_CNTREPAIR        NUMBER(8,0);
+p_WORKDATE         VARCHAR2(8);
+p_WORKTIME         VARCHAR2(6);
+p_FAILDESC         VARCHAR2(1000);
+
+p_MODEL            VARCHAR2(50);
+p_MO               VARCHAR2(32);
+
+INSERT_RES1        VARCHAR2(50);
+INSERT_RES2        VARCHAR2(50);
+
+e_CALL_INSERT1     EXCEPTION;
+e_CALL_INSERT2     EXCEPTION;
+
+BEGIN
+
+    p_RESULT := TRIM(RESULT);
+    p_FAILDESC := TRIM(FAILDESC);
+    p_RETEST := TRIM(RETEST);
+
+    p_DATE:=SYSDATE;
+    p_WORKDATE:=TO_CHAR(p_DATE,'YYYYMMDD');
+    p_WORKTIME:=TO_CHAR(p_DATE,'HH24MISS');
+    p_DATE:=TO_DATE(p_WORKDATE || p_WORKTIME,'YYYYMMDDHH24MISS');
+
+    p_WORKSECT:=SUBSTR(p_WORKTIME,1,2);
+
+    SELECT GROUP_NAME,LINE_NAME,STATION_NAME,SECTION_NAME
+    INTO p_GROUP,p_LINE,p_STATION,p_SECTION
+    FROM SFIS1.C_ICT_STATION_T
+    WHERE STATION_CODE = MACHINE_CODE;
+
+    SFIS1.CHECK_LINE_STOP(p_LINE,p_GROUP,p_SECTION,BARCODE,RES); --GET LAST SN by LINE and GROUP--
+
+    SELECT MODEL_NAME,MO_NUMBER
+    INTO p_MODEL,p_MO
+    FROM SFISM4.R_WIP_TRACKING_T
+    WHERE SERIAL_NUMBER=BARCODE;
+
+    ----Actions Begin--
+    INSERT INTO SFISM4.R_TEST_RESULT_T(SERIAL_NUMBER,STATION_ID,TEST_DATE,TEST_TIME,RESULT,MODEL_NAME,STATION_TYPE,WORK_STATION,OPERATOR,RETEST,FAILDESC,MO_NUMBER,FIXTURE_ID)
+    VALUES(BARCODE,0,p_WORKDATE,p_WORKTIME,p_RESULT,p_MODEL,p_GROUP,0,EMP,p_RETEST,p_FAILDESC,p_MO,MACHINE_CODE);
+    COMMIT;
+
+    IF (p_RESULT='P') THEN
+
+      SFIS1.STN_REC_Z(p_LINE,p_SECTION,p_GROUP,p_STATION,p_MO,BARCODE, p_WORKDATE,p_WORKSECT,'0');
+      SFIS1.UPDATE_R107(EMP,p_LINE,p_SECTION,p_GROUP,p_STATION,p_MO,BARCODE,'0',p_DATE);
+      RES := 'OK';
+
+    ELSIF (p_RESULT = 'F') THEN
+
+        ERROR_CODE:=p_FAILDESC;
+
+        IF (ERROR_CODE IS NULL) OR (ERROR_CODE = '') OR (UPPER(ERROR_CODE) = 'NULL') THEN  -----ERROR_CODE IS NULL--
+
+          AOI_ERROR_INSERT(TRIM(BARCODE),NULL,MACHINE_CODE,INSERT_RES1);
+          IF INSERT_RES1 <> 'OK' THEN
+            RES := INSERT_RES1;
+            RAISE e_CALL_INSERT1;
+          END IF;
+
+        ELSE   ---ERROR_CODE IS NOT NULL --
+          FOR v_EC_CNT IN 1..EC_CNT LOOP ---LOOP TO INSERT THE ERROR_CODE --
+             AOI_ERROR_INSERT(TRIM(BARCODE),EC_LIST(v_EC_CNT),MACHINE_CODE,INSERT_RES2);
+             IF INSERT_RES2 <> 'OK' THEN
+               RES := INSERT_RES2;
+               RAISE e_CALL_INSERT2;
+             END IF;
+          END LOOP;
+
+        END IF;
+        
+        SFIS1.STN_REC_Z(p_LINE,p_SECTION,p_GROUP,p_STATION,p_MO,BARCODE, p_WORKDATE,p_WORKSECT,'1');
+        SFIS1.UPDATE_R107(EMP,p_LINE,p_SECTION,p_GROUP,p_STATION,p_MO,BARCODE,'1',p_DATE);
+        COMMIT;
+        RES:='OK';
+    END IF; 
+    ----Actions end--
+
+EXCEPTION
+    WHEN e_CALL_INSERT1 THEN
+        RES := RES||' CALL AOI_ERROR_INSERT FAILED! _01' ;
+
+    WHEN e_CALL_INSERT2 THEN
+        RES := RES||' CALL AOI_ERROR_INSERT FAILED! _02';
+
+    WHEN OTHERS THEN
+        RES := 'IAOITEST_V2 OTHER ERROR!';
+END;

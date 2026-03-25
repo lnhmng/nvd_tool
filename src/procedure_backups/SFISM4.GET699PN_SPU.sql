@@ -1,0 +1,58 @@
+PROCEDURE        GET699PN_SPU (V_INPN     IN     VARCHAR2,
+                                             o_flag         OUT      VARCHAR2,
+                                             V_OUTRES      OUT VARCHAR2)
+AS
+   I_EXIST          INT;
+   E_NO699PN        EXCEPTION;
+   E_NOPN           EXCEPTION;
+   E_TOOMUCH699PN   EXCEPTION;
+BEGIN
+   o_flag := '-1'; 
+   SELECT COUNT (L600_690_PN)
+     INTO I_EXIST
+     FROM SFIS1.C_NV_MODESC_T
+    WHERE L600_690_PN = V_INPN;
+
+   IF I_EXIST = 0
+   THEN
+      RAISE E_NOPN;
+   END IF;
+
+   SELECT COUNT (DISTINCT L699_PN)
+     INTO I_EXIST
+     FROM SFIS1.C_NV_MODESC_T
+    WHERE L600_690_PN = V_INPN AND LENGTH (L699_PN) > 0 AND L699_PN <> 'N/A';
+
+   IF I_EXIST = 0
+   THEN
+      RAISE E_NO699PN;
+   ELSE
+      IF I_EXIST > 1
+      THEN
+         RAISE E_TOOMUCH699PN;
+      ELSE
+         SELECT L699_PN
+           INTO V_OUTRES
+           FROM SFIS1.C_NV_MODESC_T
+          WHERE     L600_690_PN = V_INPN
+                AND LENGTH (L699_PN) > 0
+                AND L699_PN <> 'N/A'
+                AND ROWNUM = 1;
+      END IF;
+   END IF;
+   o_flag := '0'; 
+EXCEPTION
+   WHEN E_NO699PN
+   THEN
+      V_OUTRES := 'NO FOUND 699 PN(SFISM4.GET699PN)';
+   WHEN E_NOPN
+   THEN
+      V_OUTRES := 'PN IS NOT EXIST';
+   WHEN E_TOOMUCH699PN
+   THEN
+      V_OUTRES :=
+         'THERE IS MORN THAN ONE RECORD ABOUT 699PN IN SFIS1.C_NV_MODEL';
+   WHEN OTHERS
+   THEN
+      V_OUTRES := 'UNKNOWN ERROR(SFISM4.GET699PN)';
+END;

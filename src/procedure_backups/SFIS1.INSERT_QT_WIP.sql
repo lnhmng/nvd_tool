@@ -1,0 +1,62 @@
+PROCEDURE                   INSERT_QT_WIP
+AS
+    V_ERROR_FLAG  VARCHAR2(1);
+     V_APY        VARCHAR2(20);  
+     V_DATE       VARCHAR2(20);
+     V_CHECK_SQL  VARCHAR2(20);
+    -- CURSOR1: 抓取所有有PB的MO
+   CURSOR CUR1 IS
+    SELECT DISTINCT a.PO_NO
+    FROM sfism4.r_mo_base_t a
+    WHERE a.mo_create_date > SYSDATE - 365
+      AND a.po_no LIKE 'PB%' ;
+
+ROW1 CUR1%ROWTYPE;
+
+CURSOR CUR2(p_PO_NO VARCHAR2) IS
+
+         SELECT 'QuangChau' AS SITE,'NVD' AS BU ,A.PO_NO,B.BUILD_PHASE,A.MO_NUMBER,A.MODEL_NAME,COUNT(A.SERIAL_NUMBER) AS QTY,
+           DECODE(A.ERROR_FLAG,0,'PASS','FAIL') AS TEST_RESULT,
+           DECODE(C.STATION_GROUP ,NULL,'Others',C.STATION_GROUP) as STATION_GROUP
+            FROM SFISM4.R_WIP_TRACKING_T A
+            LEFT JOIN SFISM4.R_MO_BASE_T B ON A.MO_NUMBER=B.MO_NUMBER and a.model_name =b.model_name
+            LEFT JOIN SFIS1.C_STATION_GROUP_T C ON A.GROUP_NAME=C.STATION_NAME              
+            AND (CASE WHEN SUBSTR(A.MODEL_NAME, 4, 1)='-' THEN SUBSTR(A.MODEL_NAME, 5, 5) ELSE SUBSTR(A.MODEL_NAME, 4, 5) END) = C.MODEL_NAME
+            WHERE A.GROUP_NAME <> '0'
+              AND A.IN_STATION_TIME > SYSDATE -365
+              AND A.PO_NO IS NOT NULL
+              AND A.PO_NO = p_PO_NO
+            GROUP BY A.PO_NO, A.MO_NUMBER, A.MODEL_NAME, A.GROUP_NAME, B.BUILD_PHASE, 
+            A.ERROR_FLAG, C.STATION_GROUP, 'QuangChau', 'NVD', DECODE(A.ERROR_FLAG,0,'PASS','FAIL'), 
+            DECODE(C.STATION_GROUP ,NULL,'Others',C.STATION_GROUP);
+
+ROW2 CUR2%ROWTYPE;
+
+BEGIN
+    V_ERROR_FLAG := '0';
+
+    OPEN CUR1;
+        LOOP
+            FETCH CUR1 INTO ROW1;
+            EXIT WHEN CUR1%NOTFOUND;
+            V_DATE := TO_CHAR(sysdate ,'yyyy/mm/dd HH24')|| ':00:00'; 
+            OPEN CUR2(ROW1.PO_NO);   -- 修正：以 PO_NO 為參數
+            LOOP
+                FETCH CUR2 INTO ROW2;
+                EXIT WHEN CUR2%NOTFOUND;
+
+                INSERT INTO sfis1.C_QT_WIP_T
+                    (PO_NO, BUILD_PHASE, MO_NUMBER, MODEL_NAME, QTY, TEST_RESULT, STATION_GROUP, LAST_UPDATE_TIME)
+                VALUES
+                    (ROW2.PO_NO, ROW2.BUILD_PHASE, ROW2.MO_NUMBER,
+                     ROW2.MODEL_NAME, ROW2.QTY, ROW2.TEST_RESULT,
+                     ROW2.STATION_GROUP, TO_DATE(V_DATE, 'yyyy/mm/dd HH24:MI:SS'));
+
+            END LOOP;
+            CLOSE CUR2;
+
+
+        END LOOP;
+        CLOSE CUR1;
+
+END INSERT_QT_WIP;

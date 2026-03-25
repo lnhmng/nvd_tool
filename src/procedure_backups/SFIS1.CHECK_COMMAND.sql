@@ -1,0 +1,17 @@
+PROCEDURE       CHECK_COMMAND (
+   DATA   IN       VARCHAR2,
+   RES    OUT      VARCHAR2
+)
+IS
+BEGIN
+   IF DATA = 'CMD'
+   THEN
+      RES := 'OK';
+   ELSE
+      RES := 'NO CMD';
+   END IF;
+EXCEPTION
+   WHEN OTHERS
+   THEN
+      RES := 'OTHER ERROR ' || SUBSTR (SQLERRM, 1, 100);
+END;

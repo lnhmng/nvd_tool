@@ -1,0 +1,165 @@
+PROCEDURE               iMARGFBTTEST_SPU
+(
+ BARCODE      IN VARCHAR2,
+ MACHINE_CODE IN VARCHAR2,
+ EMP          IN VARCHAR2,
+ MAC          IN VARCHAR2,
+ TESTDATE      IN VARCHAR2,
+ TESTTIME      IN VARCHAR2,
+ CODE1394      IN VARCHAR2,
+ RESERVE2      IN VARCHAR2,
+ RESERVE3      IN VARCHAR2,
+ RESULT          IN VARCHAR2,
+ ERROR_CODE      IN VARCHAR2,
+ END_FLAG      IN VARCHAR2,
+   o_flag         OUT      VARCHAR2, 
+ RES           OUT VARCHAR2) IS
+
+p_WIP_LINE      VARCHAR2(20);
+p_WIP_GROUP      VARCHAR2(20);
+p_STATION      VARCHAR2(20);
+p_LINE          VARCHAR2(20);
+p_SECTION      VARCHAR2(20);
+p_GROUP          VARCHAR2(20);
+p_MACHINECODE VARCHAR2(4);
+
+MAC1          VARCHAR2(12);
+MAC2          VARCHAR2(12);
+
+p_FLAG          VARCHAR2(5);
+
+v_0CNT          NUMBER(2,0);
+v_FCNT          NUMBER(2,0);
+v_RES          VARCHAR2(50);
+STNCNT          NUMBER(2,0);
+
+H1RES           VARCHAR2(20);
+SNRES          VARCHAR2(20);
+EMPRES          VARCHAR2(20);
+MACRES          VARCHAR2(20);
+INPUTRES      VARCHAR2(30);
+HRES          VARCHAR2(20);
+
+
+e_File_ERROR  EXCEPTION;
+e_MAC_ERROR      EXCEPTION;
+e_H1_ERROR      EXCEPTION;
+e_EMP_ERROR      EXCEPTION;
+e_STN_DUP      EXCEPTION;
+e_NO_STN      EXCEPTION;
+BEGIN
+   o_flag := '-1';
+
+    IF END_FLAG<>'DONE' THEN
+       RAISE e_File_ERROR;
+    END IF;
+
+    IF LENGTH(MAC)<>25 THEN
+       MACRES:='THE LENGTH OF MACADDRESS IS WRONG';
+       RAISE e_MAC_ERROR;
+    END IF;
+
+    p_FLAG:='0';
+    MAC1:=SUBSTR(MAC,1,12);
+    SFIS1.MacCheckByte(MAC1,v_RES);
+    SFIS1.MacCharCnt(MAC1,'0',v_0CNT);
+    SFIS1.MacCharCnt(MAC1,'F',v_FCNT);
+    IF v_RES='false' OR v_0CNT=12 OR v_FCNT=12 THEN
+          p_FLAG:='2';
+    END IF;
+
+    MAC2:=SUBSTR(MAC,14,12);
+    SFIS1.MacCheckByte(MAC1,v_RES);
+    SFIS1.MacCharCnt(MAC1,'0',v_0CNT);
+    SFIS1.MacCharCnt(MAC1,'F',v_FCNT);
+    IF v_RES='false' OR v_0CNT=12 OR v_FCNT=12 THEN
+          p_FLAG:='2';
+    END IF;
+
+    IF MAC1=MAC2 THEN
+          p_FLAG:='1';
+    END IF;
+
+    COMPAQ.FBT_CHECK_MAC(BARCODE,MAC1,MAC2,p_FLAG,MACRES);
+
+    IF MACRES<>'0' THEN
+       RAISE e_MAC_ERROR;
+       --RES:=MACRES;
+    END IF;
+
+       SELECT LINE_NAME,GROUP_NAME
+       INTO p_WIP_LINE,p_WIP_GROUP
+       FROM SFISM4.R_WIP_TRACKING_T
+       WHERE SERIAL_NUMBER=BARCODE;
+
+       SFIS1.Check_Lsa_H1(EMP,p_WIP_LINE,p_WIP_GROUP,H1RES);
+       IF H1RES<>'OK' THEN
+          RAISE e_H1_ERROR;
+       END IF;
+
+    --SELECT COUNT(*)
+    --INTO STNCNT
+    --FROM SFIS1.C_ICT_STATION_T
+    --WHERE STATION_CODE=MACHINE_CODE;
+
+    --IF STNCNT=0 THEN
+      -- RAISE e_NO_STN;
+    --END IF;
+
+    --IF STNCNT>1 THEN
+      -- RAISE e_STN_DUP;
+    --END IF;
+
+    --SELECT STATION_NAME,LINE_NAME,SECTION_NAME,GROUP_NAME
+    --INTO p_STATION,p_LINE,p_SECTION,p_GROUP
+    --FROM SFIS1.C_ICT_STATION_T
+    --WHERE STATION_CODE=MACHINE_CODE;
+
+    -------------------EMP VERIFY
+    SFIS1.CHECK_EMP_V3(EMP,'FBT',EMPRES);
+    IF EMPRES<>'OK' THEN
+       RAISE e_EMP_ERROR;--------------------------------EMP Exception
+    END IF;
+
+    --SFISM4.TEST_DINO_FBT (p_SERIALNUMBER,p_STATION_ID,p_TEST_DATE IN VARCHAR2,p_TEST_TIME IN VARCHAR2,
+    -- p_RESULT,p_ERROR_CODE,p_STATION_TYPE,p_WORK_STATION,p_OPERATORID,p_FAILDESC,RES);
+    p_MACHINECODE:=SUBSTR(MACHINE_CODE,-4,4);
+
+    SFISM4.iTEST_DINO_FBT(BARCODE,p_MACHINECODE,TESTDATE,TESTTIME,RESULT,ERROR_CODE,'FBT','',EMP,'0',INPUTRES);
+    RES:=INPUTRES||'\nDONE';
+
+    -------------------CHECK IF SHOULD BE STOP LINE
+    SFIS1.Check_Lsa_H(EMP,p_WIP_LINE,p_WIP_GROUP,HRES);
+    IF HRES<>'OK' THEN
+       RES:=HRES||'\nDONE';
+    END IF;
+   o_flag := '0';
+
+EXCEPTION
+    WHEN e_STN_DUP THEN
+       BEGIN
+          RES:='Station DUPLICATED'||'\nDONE';
+       END;
+    WHEN e_NO_STN THEN
+       BEGIN
+          RES:='NO Station'||'\nDONE';
+       END;
+    WHEN e_File_ERROR THEN
+       BEGIN
+          RES:='WRONG FILE FORMAT!'||'\nDONE';
+       END;
+    WHEN e_MAC_ERROR THEN
+       BEGIN
+          RES:=MACRES||'\nDONE';
+       END;
+    WHEN e_H1_ERROR THEN
+       BEGIN
+          RES:=H1RES||'\nDONE';
+       END;
+    WHEN e_EMP_ERROR THEN
+       BEGIN
+          RES:=EMPRES||'\nDONE';
+       END;
+    WHEN OTHERS THEN
+      RES:='SFC OTHER ERROR'||'\nDONE';
+END;

@@ -1,0 +1,47 @@
+PROCEDURE               CHECK_SN_KP (DATA IN VARCHAR2,KPC IN VARCHAR2,RES OUT VARCHAR2) IS
+-- ????"DATA" ?sn
+
+C_KP_RELATION NUMBER;
+C_KP_COUNT NUMBER;
+C_COUNT NUMBER;
+OK VARCHAR2(25);
+BEGIN
+   C_COUNT := 0;
+   C_KP_COUNT := 0;
+   C_KP_RELATION := 0;
+   OK := '';
+   
+   SELECT KP_RELATION,KP_COUNT INTO C_KP_RELATION,C_KP_COUNT 
+      FROM SFIS1.C_BOM_KEYPART_T C1,
+           SFISM4.R_WIP_TRACKING_T R1,
+           SFISM4.R_MO_BASE_T R2
+      WHERE R1.SERIAL_NUMBER = DATA 
+        AND R1.MO_NUMBER = R2.MO_NUMBER 
+        AND C1.BOM_NO = R2.BOM_NO 
+        AND C1.KEY_PART_NO = KPC
+        AND ROWNUM = 1;
+        
+   if C_KP_RELATION = 0 then
+      SELECT COUNT(*) INTO C_COUNT FROM SFISM4.R_WIP_KEYPARTS_T
+         WHERE SERIAL_NUMBER = DATA AND KEY_PART_NO = KPC
+         GROUP BY SERIAL_NUMBER;
+   else
+      SELECT COUNT(*) INTO C_COUNT 
+         FROM SFISM4.R_WIP_KEYPARTS_T
+         WHERE SERIAL_NUMBER = DATA 
+           AND KP_RELATION = C_KP_RELATION
+         GROUP BY SERIAL_NUMBER;
+   end if;
+   
+-- kimiko??????if C_COUNT >= C_KP_COUNT then???
+   if C_COUNT > C_KP_COUNT then
+      OK := KPC||' DUP';
+   else
+      OK := 'OK';
+   end if;
+   
+   RES := OK;
+exception
+   when others then
+      RES := 'OK';
+END;

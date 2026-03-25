@@ -1,0 +1,37 @@
+PROCEDURE             CHECK_SNN (DATA IN VARCHAR2, RES OUT VARCHAR2)
+IS
+   C_DATA         VARCHAR2 (25);
+   C_MODEL_NAME   VARCHAR2 (25);
+   COUNT1         NUMBER;
+BEGIN
+   IF INSTR (DATA, ',') > 0
+   THEN
+      SELECT TRIM(SUBSTR (DATA, 1, INSTR (DATA, ',') - 1))
+        INTO C_DATA
+        FROM DUAL;
+   ELSE
+      C_DATA :=DATA;
+   END IF;
+
+   SELECT COUNT (*)
+     INTO COUNT1
+     FROM SFISM4.R_WIP_TRACKING_T
+    WHERE SERIAL_NUMBER = C_DATA;
+
+  -- SELECT COUNT (*)
+    -- INTO COUNT1
+   --  FROM SFIS1.C_PARAMETER_INI
+   -- WHERE VR_NAME = C_MODEL_NAME AND PRG_NAME = '900_VI'
+    --      AND VR_CLASS = '900_VI';
+
+   IF COUNT1 > 0
+   THEN
+      RES := 'OK';
+   ELSE
+      RES := ' NO SN ';
+   END IF;
+EXCEPTION
+   WHEN OTHERS
+   THEN
+      RES := ' NO SN ';
+END;

@@ -1,0 +1,27 @@
+PROCEDURE BINDING_KP_SN 
+(
+DATA      IN VARCHAR2,
+SN        IN  VARCHAR2,
+RES         OUT VARCHAR2)
+AS
+e_ERROR       EXCEPTION;
+C_EC       VARCHAR2(25);
+BEGIN
+--    SELECT ERROR_CODE INTO C_EC FROM C_ERROR_CODE_T
+--      WHERE ERROR_CODE = DATA
+--      GROUP BY ERROR_CODE;
+  IF  SUBSTR(DATA,0,4) ='1111' THEN
+    RES:='OK1';
+  ELSE  
+   RES:='KP_SN FAIL' || SN ||SUBSTR(DATA,0,4);
+   RAISE e_ERROR;
+  END IF;
+  
+  RES:='OK';
+  EXCEPTION
+     WHEN e_ERROR     THEN
+         NULL;
+     WHEN OTHERS THEN
+        res:='[BINDING_KP_SN] other error' || SN;
+        res:='[BINDING_KP_SN] other error' || SN;
+END;

@@ -1,0 +1,30 @@
+PROCEDURE       OQC_REWORK_CARTON (
+   DATA     IN     VARCHAR2,
+   GROUP1   IN     VARCHAR2,
+   EMP      IN     VARCHAR2,
+   RES         OUT VARCHAR2)
+IS
+BEGIN
+   DELETE FROM SFISM4.R_CARTON_DETAIL_T
+         WHERE CARTON_NO = DATA;
+
+   UPDATE SFISM4.R_WIP_TRACKING_T
+      SET SECTION_NAME = GROUP1,
+          GROUP_NAME = GROUP1,
+          STATION_NAME = 'REWORK',
+          QA_NO = 'N/A',
+          IN_STATION_TIME = SYSDATE,
+          CONTAINER_NO = 'N/A',
+          PALLET_NO = 'PN/A',
+          CARTON_NO = 'N/A',
+          SHIPPING_SN = 'N/A',
+          EMP_NO = EMP,
+          ECN_PASS_QTY = 0,
+          ECN_FAIL_QTY = 0,
+          FAIL_QTY = 0
+    WHERE CARTON_NO = DATA;
+EXCEPTION
+   WHEN OTHERS
+   THEN
+      NULL;
+END;

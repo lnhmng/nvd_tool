@@ -1,0 +1,23 @@
+PROCEDURE       Check_Smt_Tabel_NO (STATION_NUM IN VARCHAR2,
+                           MACHINE IN VARCHAR2,TBL IN VARCHAR2,VEHICLE IN VARCHAR2,
+                           PPN IN VARCHAR2,VER IN VARCHAR2,EMP IN VARCHAR2,
+                           LOC IN VARCHAR2,KPN IN VARCHAR2,LOT IN VARCHAR2,
+                           Line IN VARCHAR2,RES OUT VARCHAR2) IS
+C_KPN VARCHAR2(32);
+C_OUTPUT VARCHAR2(64);
+V_TEMP_KP VARCHAR2(9);
+V_TEMP_KP2 VARCHAR2(12);
+
+BEGIN
+   IF SUBSTR(TBL,1,3)='TBL' THEN
+                  RES:='OK';
+             ELSE
+                  RES :='TBL NO.  ERROR';
+  END IF;
+
+  EXCEPTION
+   WHEN OTHERS THEN
+      RES:='TBL NO.  ERROR';
+END;
+
+ -- CREATE BY Xianjin Yu  2010/610 for 1X7W-100615-01

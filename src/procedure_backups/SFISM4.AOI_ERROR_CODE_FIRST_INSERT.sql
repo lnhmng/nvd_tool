@@ -1,0 +1,156 @@
+PROCEDURE               AOI_ERROR_CODE_FIRST_INSERT
+/*****************************************************************************
+Author:      TANZISONG                                                      **
+Date:        2019-12-26                                                        **
+Description: To insert the error information into sfism4.H_repair_t&R_TEST_TEMP_T            **
+******************************************************************************/
+(
+  BARCODE        IN  VARCHAR2,
+  FAILDESC      IN  VARCHAR2, 
+  MACHINE_CODE   IN  VARCHAR2,
+  RES            OUT VARCHAR2
+)
+AS
+
+--ERR_CNT          NUMBER(2,0);
+
+p_DATE           DATE;
+v_ERROR_CODE     VARCHAR2(50);
+p_GROUP          VARCHAR2(50);
+p_STATION        VARCHAR2(50);
+p_LINE           VARCHAR2(50);
+p_MODEL          VARCHAR2(50);
+p_MO             VARCHAR2(50);
+
+
+ERROR_CODE        VARCHAR2(1000);
+
+ARRAY_LENGTH      INTEGER;
+
+TEMP_ERROR        VARCHAR2(1000);
+
+erri              NUMBER(2,0);
+
+TEMP              VARCHAR2(1000);
+
+e_NO_EC          EXCEPTION;
+e_e_ec           EXCEPTION;
+
+BEGIN
+
+
+  SELECT MODEL_NAME,MO_NUMBER
+  INTO p_MODEL,p_MO
+  FROM SFISM4.R_WIP_TRACKING_T
+  WHERE SERIAL_NUMBER=BARCODE;
+
+  SELECT GROUP_NAME,STATION_NAME,LINE_NAME
+  INTO p_GROUP,p_STATION,p_LINE
+  FROM SFIS1.C_ICT_STATION_T
+  WHERE STATION_CODE = MACHINE_CODE;
+
+  SELECT SYSDATE INTO p_DATE FROM DUAL;
+
+
+ IF (FAILDESC <> '') OR (FAILDESC IS NOT NULL) THEN
+
+  ERROR_CODE := FAILDESC;
+  TEMP:='';
+  ARRAY_LENGTH := 0;
+
+  WHILE (INSTR(ERROR_CODE,';')>0)
+  LOOP
+    erri:=INSTR(ERROR_CODE,';');
+    TEMP_ERROR:=SUBSTR(ERROR_CODE,1,erri-1);
+
+
+    SELECT NVL(QAERRORCODE,'AR013')
+        INTO   v_ERROR_CODE
+        FROM   SFIS1.AOI_ERROR_CODE
+       -- WHERE  STATION_TYPE = 'AOI' AND TESTERRORCODE =TEMP_ERROR;   
+       WHERE  STATION_TYPE =SUBSTR(p_GROUP,1,3) AND TESTERRORCODE =TEMP_ERROR;   
+
+
+    ARRAY_LENGTH := ARRAY_LENGTH +1;   
+
+
+     IF SUBSTR(v_ERROR_CODE,1,3) <> '98W' THEN
+
+       TEMP:=TEMP||''||v_ERROR_CODE; 
+     ELSE
+
+      v_ERROR_CODE:='';
+
+      TEMP:=TEMP||''||v_ERROR_CODE;
+
+
+     END IF;
+
+
+    ERROR_CODE := SUBSTR(ERROR_CODE,INSTR(ERROR_CODE,';')+1,LENGTH(ERROR_CODE)-erri);
+
+
+
+
+  END LOOP;
+ END IF; 
+
+  IF (ERROR_CODE <> '') OR (ERROR_CODE IS NOT NULL) THEN
+     ARRAY_LENGTH := ARRAY_LENGTH +1;  
+
+
+     SELECT NVL(QAERRORCODE,'AR013')
+        INTO   v_ERROR_CODE
+        FROM   SFIS1.AOI_ERROR_CODE
+      --  WHERE  STATION_TYPE = 'AOI' AND TESTERRORCODE =ERROR_CODE;    
+       WHERE  STATION_TYPE = SUBSTR(p_GROUP,1,3) AND TESTERRORCODE =ERROR_CODE;    
+
+
+
+     -- TEMP:=TEMP||'&'||v_ERROR_CODE;
+
+      IF SUBSTR(v_ERROR_CODE,1,3) <> '98W' THEN
+
+           TEMP:=TEMP||''||v_ERROR_CODE; 
+         ELSE
+
+          v_ERROR_CODE:='';
+
+          TEMP:=TEMP||''||v_ERROR_CODE;
+
+
+         END IF;
+
+
+    --  V_TEMP:=substr(TEMP,2,length(TEMP||'&'||v_ERROR_CODE)-1);
+
+
+      INSERT INTO SFISM4.H_TEST_TEMP_T (SERIAL_NUMBER,STATION_ID,TEST_DATE,TEST_TIME,RESULT,ERROR_CODE,MODEL_NAME,STATION_TYPE,WORK_STATION,OPERATOR,RETEST,FAILDESC,
+                                            MO_NUMBER,MARKET_NAME,MEM_VENDOR_ID,MEM_PART_ID,MEM_DC,BASIC_TESTTIME_BEGIN,BASIC_TESTTIME_END)
+                           VALUES (BARCODE,'1000',TO_CHAR (p_DATE, 'YYYYMMDD'),TO_CHAR (p_DATE-1/24/60/60, 'HH24MISS'),'F',NVL(TEMP,'Others'),p_MODEL,p_STATION,'0','','0','',p_MO,
+                               'N/A','N/A','N/A','N/A',TO_CHAR (p_DATE-1/24/60/60, 'YYYYMMDDHH24MISS'),TO_CHAR (p_DATE-1/24/60/60, 'YYYYMMDDHH24MISS'));
+
+
+     -- INSERT INTO SFISM4.H_SN_FIXURE_T(SERIAL_NUMBER,FIXID,GROUP_NAME, STATION_NAME,STATION_CODE,EMP,IN_STATION_TIME)
+     --                                   VALUES(BARCODE,MACHINE_CODE ,p_GROUP,p_STATION,MACHINE_CODE,'',TO_CHAR (p_DATE, 'YYYYMMDDHH24MISS'));
+
+
+
+      INSERT INTO SFISM4.H_REPAIR_T(SERIAL_NUMBER,MO_NUMBER,TEST_TIME, TEST_CODE,TEST_STATION,TEST_LINE,RECORD_TYPE,MODEL_NAME)
+                                        VALUES(BARCODE,p_MO,p_DATE,NVL(TEMP,'Others'),p_STATION,p_LINE,'T',p_MODEL);
+
+
+  END IF;
+
+  RES := 'OK';
+
+EXCEPTION
+--  when e_e_ec  then 
+--   null;
+ -- WHEN e_NO_EC THEN
+ --   RES := 'ERROR CODE ERROR';
+  WHEN OTHERS THEN
+   -- ROLLBACK;
+    RES := 'AOI_ERROR_INSERT OTHER ERROR';
+
+END;

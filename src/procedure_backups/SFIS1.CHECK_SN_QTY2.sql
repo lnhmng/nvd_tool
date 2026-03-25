@@ -1,0 +1,28 @@
+PROCEDURE             CHECK_SN_QTY2 (DATA      IN     VARCHAR2,
+                                                    RES       OUT    VARCHAR2)
+--JISHU202008
+IS
+   C_MODEL   VARCHAR2 (25);
+   TEMP_COUNT   NUMBER;
+BEGIN
+   RES := 'OK';
+
+   SELECT MODEL_NAME
+   INTO C_MODEL  
+   FROM SFISM4.R_WIP_TRACKING_T 
+   WHERE SERIAL_NUMBER=SUBSTR(DATA,1,13);
+
+   SELECT COUNT (*)
+     INTO TEMP_COUNT
+     FROM SFISM4.R_SAME_SN_T
+    WHERE    MODEL_NAME = C_MODEL;
+
+   IF MOD (TEMP_COUNT, 25) = 0
+   THEN
+      RES := '注意:已掃25PS,請UNDO重新作業/';
+   END IF;
+EXCEPTION
+   WHEN OTHERS
+   THEN
+      RES := 'OK';
+END;

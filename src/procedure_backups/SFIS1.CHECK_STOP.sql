@@ -1,0 +1,68 @@
+PROCEDURE       CHECK_STOP (
+SN      IN       VARCHAR2,
+MYGROUP IN       VARCHAR2,
+RES     OUT      VARCHAR2)
+IS
+S_MODEL          VARCHAR2 (32);
+STOP_QTY         NUMBER;
+MODEL_QTY        NUMBER;
+TIME_CONTROL     NUMBER;
+BAKIN_COUNT      NUMBER;
+S_WHY            VARCHAR2 (32);
+E_ERROR          EXCEPTION;
+SN_ERROR         EXCEPTION;
+
+BEGIN
+    SELECT MODEL_NAME INTO S_MODEL FROM SFISM4.R_WIP_TRACKING_T WHERE serial_number=SN;
+    SELECT COUNT(*) INTO STOP_QTY FROM SFISM4.R_STOP_LINE_T WHERE MODEL_NAME=S_MODEL AND GROUP_NAME=MYGROUP AND stop_flag='1';
+
+    IF STOP_QTY >=1 THEN
+        SELECT WHY_STOP INTO S_WHY FROM SFISM4.R_STOP_LINE_T WHERE MODEL_NAME=S_MODEL AND GROUP_NAME=MYGROUP AND stop_flag='1' AND ROWNUM=1;
+        RES :='STOP LINE FOR ' || S_WHY ;
+        RAISE E_ERROR;
+    END IF;  
+
+    IF mygroup='690_VI' THEN
+        CHECK_BI_HASS_SN(SN,RES);
+        IF(RES<>'OK') THEN
+            RAISE SN_ERROR;
+        END IF;
+    END IF;
+
+    IF mygroup='BAKING_OUT' THEN
+    SELECT COUNT(*) INTO MODEL_QTY FROM SFIS1.C_CONTROLTIME_T WHERE MODEL_NAME=S_MODEL;
+        IF MODEL_QTY >0 THEN
+
+        SELECT COUNT(*) INTO BAKIN_COUNT  FROM SFISM4.R_SN_DETAIL_T WHERE SERIAL_NUMBER=SN AND MODEL_NAME=S_MODEL AND GROUP_NAME = 'BAKING_IN';
+                IF BAKIN_COUNT = 0  THEN 
+                    RES :='NOT SCAN BAKING IN,PLS CHECK' ;
+                    RAISE E_ERROR;
+                END IF;
+
+       SELECT ROUND((SYSDATE - MAX(a.IN_STATION_TIME)) * 24 * 60) - TO_NUMBER(b.CONTROL_TIME) INTO TIME_CONTROL FROM 
+                    sfism4.R_SN_DETAIL_T a,
+                    sfis1.C_CONTROLTIME_T b
+                WHERE 
+                    a.MODEL_NAME = b.MODEL_NAME
+                    AND a.MODEL_NAME = S_MODEL
+                    AND a.SERIAL_NUMBER = SN
+                    AND a.GROUP_NAME = 'BAKING_IN'
+                GROUP BY 
+                    b.CONTROL_TIME;
+
+                IF TIME_CONTROL<0  THEN 
+                    RES :='BAKINGOUT NOT ENOUGH TIME' ;
+                    RAISE E_ERROR;
+                END IF;
+        --RAISE SN_ERROR;
+        END IF;
+    END IF;
+
+    RES:='OK';
+    CHECK_ROUTE('N/A', MYGROUP, SN, RES);
+exception 
+   when E_ERROR then null;
+   WHEN SN_ERROR THEN NULL;
+   WHEN OTHERS THEN 
+   RES:= 'OTHER ERROR[CHECK_STOP]';
+END;

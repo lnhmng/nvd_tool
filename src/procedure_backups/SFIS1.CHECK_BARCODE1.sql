@@ -1,0 +1,41 @@
+PROCEDURE       CHECK_BARCODE1 (DATA    IN VARCHAR2,
+                                            	  EMP     IN VARCHAR2,
+                                           		  LINE    IN VARCHAR2, 
+                                                  MYGROUP IN VARCHAR2,
+                                                  RES     OUT VARCHAR2)
+IS
+   UPC_SN       VARCHAR2 (25);
+   C_ID         VARCHAR2 (25);
+   UPC_NUM      NUMBER;
+   e_ERROR      EXCEPTION;                
+BEGIN  
+
+ SELECT SERIAL_NUMBER INTO UPC_SN  FROM SFISM4.R_WIP_TRACKING_T WHERE SERIAL_NUMBER =SUBSTR(TRIM(DATA),1,13);
+   IF UPC_SN IS NULL THEN
+       RES:='NO SN/';
+   ELSE
+   RES :='OK';
+   END IF;
+   IF  (LENGTH (DATA) >13 OR SUBSTR(TRIM(DATA),15,3) <> '699') AND MYGROUP IN ('BARCODE_CHECK3')  THEN 
+         RES:='BSN IS SUBSTANDARD ';
+   RETURN;
+   END IF;
+   SELECT COUNT(*) INTO UPC_NUM FROM SFISM4.R_BIDUI_SN_T WHERE SERIAL_NUMBER = SUBSTR(DATA,1,13) AND GROUP_NAME = MYGROUP;
+   IF UPC_NUM >=1 THEN
+   --RES :='SN IS USED';    --undo SN without bidui , allow to use in next scan by update  --liujiang20240314
+   
+     SELECT COUNT(*) INTO UPC_NUM FROM SFISM4.R_BIDUI_SN_T WHERE SERIAL_NUMBER = SUBSTR(DATA,1,13) AND GROUP_NAME = MYGROUP and BIDUI_SN <>'null' ;
+     if UPC_NUM>=1 then
+       RES :='SN IS USED';
+     else 
+       UPDATE SFISM4.R_BIDUI_SN_T set EMP_NO=EMP, CREATE_DATE=SYSDATE, LINE_NAME=LINE where SERIAL_NUMBER = SUBSTR(DATA,1,13) AND GROUP_NAME = MYGROUP;
+     end if; 
+   ELSE
+    INSERT INTO SFISM4.R_BIDUI_SN_T(SERIAL_NUMBER,BIDUI_SN,BIDUI_SN2,EMP_NO,CREATE_DATE,BIDUI_DATE,BIDUI_DATE2,LINE_NAME,GROUP_NAME) 
+    VALUES(UPC_SN,'null','null',EMP,SYSDATE,'','',LINE,MYGROUP);
+   END IF;
+  ---------20230601 add by lyc end-------
+EXCEPTION
+   WHEN OTHERS THEN
+      RES := 'NO SN OR  SN HAS BIDUIED /';
+END;

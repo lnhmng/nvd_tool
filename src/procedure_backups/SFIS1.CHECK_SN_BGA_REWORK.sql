@@ -1,0 +1,43 @@
+PROCEDURE                   CHECK_SN_BGA_Rework(EMP IN VARCHAR2,SECTION IN VARCHAR2,W_STATION IN VARCHAR2,MYGROUP IN VARCHAR2,DATA IN VARCHAR2,
+RES OUT VARCHAR2) IS
+c_count VARCHAR2(25);
+V_station VARCHAR2(25);
+V_FLAG   VARCHAR2(25);
+BEGIN
+
+
+   SELECT SERIAL_NUMBER,GROUP_NAME INTO c_count,V_station FROM SFISM4.R_SN_DETAIL_T WHERE  SERIAL_NUMBER = DATA AND IN_STATION_TIME=
+    (SELECT MAX(IN_STATION_TIME) FROM SFISM4.R_SN_DETAIL_T WHERE  SERIAL_NUMBER = DATA );
+
+      IF c_count >0 THEN
+
+       IF (V_station='SCRAP')  OR (V_station='LOCK') THEN 
+
+         RES:=' this station has been operated, SCRAP/LOCK';
+       END IF;  
+
+     END IF;
+
+    SELECT SERIAL_NUMBER,NEXT_STATION INTO c_count,V_station FROM SFISM4.R_WIP_TRACKING_T WHERE SERIAL_NUMBER = DATA; -- AND GROUP_NAME<>'BGA_REWORK';
+      IF c_count >0 THEN
+
+        IF V_station='R_X-RAY' THEN 
+
+            RES:=' this station has been operated, GO -- R_X-RAY';
+
+         ELSE      
+
+            update sfism4.R_WIP_TRACKING_T  set  SECTION_NAME=SECTION,GROUP_NAME=MYGROUP,STATION_NAME=W_STATION,CARTON_NO='N/A',IN_STATION_TIME=sysdate,NEXT_STATION='R_X-RAY',ERROR_FLAG='0',EMP_NO=EMP
+            where SERIAL_NUMBER=DATA;
+             RES:='OK';
+
+       END IF;
+
+      END IF;
+  exception
+   when others then
+      RES:='NO SN';
+
+
+
+END;

@@ -1,0 +1,52 @@
+PROCEDURE       CHECK_MSD (
+   DATA      IN       VARCHAR2,
+   LINE      IN       VARCHAR2,
+   MYGROUP   IN       VARCHAR2,
+   EMP       IN       VARCHAR2,
+   RES       OUT      VARCHAR2
+)
+IS
+   C_TEMP_COUNT   NUMBER;
+   POSITION1      NUMBER;
+    E_NULL        EXCEPTION;
+--ADD BY WENLIANG 20131226 FOR TIKCET S000001QSY
+BEGIN
+   SELECT COUNT (PKG_ID)
+     INTO C_TEMP_COUNT
+     FROM IQC.R_MSD_DETAIL_T A, IQC.R_KPN_INCOMING_T B
+    WHERE A.HHPN = B.HH_PN AND PKG_ID = DATA;
+
+   IF C_TEMP_COUNT > 0
+   THEN
+   
+      --ADD BY LLF 2017-09-10 begin
+      SELECT INSTR(LINE,'S',1,1) INTO POSITION1  FROM DUAL;
+        IF POSITION1>0 THEN
+           INSERT INTO iqc.R_MSD_PKGID_LOG_T(PKG_ID,open_EMP_NO,begin_time,OPEN_LOCATION) VALUES(TRIM(DATA),EMP,sysdate,'SMT');
+        ELSE
+           INSERT INTO iqc.R_MSD_PKGID_LOG_T(PKG_ID,open_EMP_NO,begin_time,OPEN_LOCATION) VALUES(TRIM(DATA),EMP,sysdate,'PTH');
+        END IF;  
+      --ADD BY LLF 2017-09-10 end
+   
+      INSERT INTO IQC.R_MSD_PKG_LOG_T
+                  (PKG_ID, EMP_NO, IN_STATION_TIME
+                  )
+           VALUES (DATA, EMP, SYSDATE
+                  );
+
+      COMMIT;
+      
+    ELSE
+     RES:='THE PKG NOT BELONG TO MSD';
+     RAISE E_NULL;
+   END IF;
+   RES := 'OK';
+   
+EXCEPTION
+    WHEN E_NULL
+      THEN
+      NULL;
+   WHEN OTHERS
+   THEN
+      RES := 'OTHER ERROR ' || SUBSTR (SQLERRM, 1, 100);
+END; 

@@ -1,0 +1,56 @@
+PROCEDURE       CHECK_ROUTE2(LINE IN VARCHAR2, MYGROUP IN VARCHAR2, DATA IN VARCHAR2,
+   RES OUT VARCHAR2) AS
+CURRENT_F VARCHAR2(1);
+CURRENT_G VARCHAR2(25);
+G VARCHAR2(25);
+R_CODE NUMBER;
+MO VARCHAR2(25);
+
+BEGIN
+
+   SELECT
+      ERROR_FLAG,GROUP_NAME,MO_NUMBER INTO CURRENT_F,CURRENT_G,MO
+   FROM
+      SFISM4.R_WIP_TRACKING_T
+   WHERE
+      SERIAL_NUMBER = DATA;
+
+   SELECT
+      ROUTE_CODE INTO R_CODE
+   FROM
+      SFISM4.R_MO_BASE_T
+   WHERE
+      MO_NUMBER = MO and ROWNUM = 1;
+
+   SELECT
+      GROUP_NEXT INTO G
+   FROM
+      C_ROUTE_CONTROL_T
+   WHERE
+      STATE_FLAG = CURRENT_F AND
+      ROUTE_CODE = R_CODE AND
+      GROUP_NAME = CURRENT_G AND
+      GROUP_NEXT = MYGROUP;
+   RES := 'OK';
+
+exception
+   when others then
+      begin
+
+         SELECT
+            GROUP_NEXT INTO G
+         FROM
+            SFIS1.C_ROUTE_CONTROL_T
+         WHERE
+            STATE_FLAG = CURRENT_F AND
+            ROUTE_CODE = R_CODE AND
+            GROUP_NAME = CURRENT_G AND
+            ROWNUM = 1;
+         G:= 'GO-'||G;
+
+       exception
+          when others then
+             G := CURRENT_G||'('||CURRENT_F||')';
+       end;
+   RES := G;
+END; 

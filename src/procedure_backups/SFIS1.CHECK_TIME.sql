@@ -1,0 +1,43 @@
+PROCEDURE       CHECK_TIME (
+DATA      IN       VARCHAR2,
+MYGROUP IN       VARCHAR2,
+RES     OUT      VARCHAR2)
+IS
+E_ERROR          EXCEPTION;
+
+COUNT0         NUMBER;
+COUNT1         NUMBER;
+
+BEGIN
+
+   if  ( MYGROUP ='CT_CHECK') then
+
+        SELECT COUNT(*)
+        INTO COUNT0
+        FROM SFISM4.R_SN_DETAIL_T
+        WHERE SERIAL_NUMBER = DATA
+        AND GROUP_NAME IN ('LMD', 'TG_DISPENSING');
+
+        IF COUNT0 >=1 THEN
+        SELECT (SYSDATE-MAX(IN_STATION_TIME))*24*60*60 INTO COUNT1  FROM SFISM4.R_SN_DETAIL_T WHERE serial_number = DATA AND  GROUP_NAME IN('LMD','TG_DISPENSING');
+
+            if COUNT1 >=300 then  
+           --ruanshiqiao add 20251216--S0000YJ6N
+            UPDATE  SFISM4.R_WIP_TRACKING_T SET GROUP_NAME ='ASSY_INPUT',SECTION_NAME='ASSY_INPUT',EMP_NO ='SYSTEM',STATION_NAME='REWORK',IN_STATION_TIME=SYSDATE WHERE serial_number = DATA;
+            DELETE FROM SFISM4.R_WEIGHT_LOG_T rwlt  WHERE SERIAL_NUMBER = DATA;
+          --ruanshiqiao end add 20251216--S0000YJ6N
+            RES :='OVER 5M TO TIM_BONDING,RETURN TO ASSY_INPUT ' ;
+            RETURN;             
+            end if; 
+        ELSE 
+            RES :='SN NOT FOUND SCAN LMD OR TG_DISPENSING' ;
+            RETURN;  
+        END IF;
+
+   END IF;  
+
+    RES:='OK';
+exception 
+   WHEN OTHERS THEN 
+   RES:= 'OTHER ERROR[CHECK_TIME]';
+END; 

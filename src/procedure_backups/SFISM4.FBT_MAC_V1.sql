@@ -1,0 +1,115 @@
+PROCEDURE        FBT_MAC_V1(
+  MACHINE_CODE IN VARCHAR2,
+  MAC          IN VARCHAR2,
+  BARCODE      IN VARCHAR2,
+  TESTDATE     IN VARCHAR2,
+  TESTTIME	   IN VARCHAR2,
+  RESULT       IN VARCHAR2,
+  EMP          IN VARCHAR2,
+  RESERVE2     IN VARCHAR2,
+  RES          OUT VARCHAR2)
+
+AS
+
+p_FLAG		  VARCHAR2(5);
+
+MAC1          VARCHAR2(20);
+MAC2          VARCHAR2(20);
+BMAC1         VARCHAR2(6);
+BMAC2         VARCHAR2(6);
+
+v_0CNT		  NUMBER(2,0);
+v_FCNT		  NUMBER(2,0);
+v_RES		  VARCHAR2(50);
+
+v_BMAC1_CNT   NUMBER(2,0);
+v_BMAC2_CNT   NUMBER(2,0);
+
+MACRES		  VARCHAR2(50);
+
+e_MAC_ERROR	   EXCEPTION;
+e_LENGTH_ERROR EXCEPTION;
+
+BEGIN
+
+      p_FLAG := '0';
+	  MACRES := '';
+
+	  IF LENGTH(MAC) = 25 THEN
+	    MAC1:=SUBSTR(MAC,1,12);
+        SFIS1.MacCheckByte(MAC1,v_RES);
+        SFIS1.MacCharCnt(MAC1,'0',v_0CNT);
+        SFIS1.MacCharCnt(MAC1,'F',v_FCNT);
+        IF v_RES='false' OR v_0CNT=12 OR v_FCNT=12 THEN
+   	      p_FLAG:='3';
+        END IF;
+
+        MAC2:=SUBSTR(MAC,14,12);
+        SFIS1.MacCheckByte(MAC2,v_RES);
+        SFIS1.MacCharCnt(MAC2,'0',v_0CNT);
+        SFIS1.MacCharCnt(MAC2,'F',v_FCNT);
+        IF v_RES='false' OR v_0CNT=12 OR v_FCNT=12 THEN
+   	      p_FLAG:='3';
+	    END IF;
+
+	    IF MAC1=MAC2 THEN
+   	     p_FLAG:='4';
+	    END IF;
+
+	    BMAC1:=SUBSTR(MAC1,1,6);
+	    BMAC2:=SUBSTR(MAC2,1,6);
+	    SELECT COUNT(*)
+	    INTO v_BMAC1_CNT
+	    FROM SFIS1.C_MAC_T
+	    WHERE B_MAC=BMAC1 AND CUSTOMER='NVIDIA' AND TYPE_FLAG='MAC';
+
+	    SELECT COUNT(*)
+	    INTO v_BMAC2_CNT
+	    FROM SFIS1.C_MAC_T
+	    WHERE B_MAC=BMAC2 AND CUSTOMER='NVIDIA' AND TYPE_FLAG='MAC';
+
+	    IF (v_BMAC1_CNT=0 OR v_BMAC2_CNT=0) THEN
+	      p_FLAG:='7';
+	    END IF;
+	  ELSIF LENGTH(MAC) = 12 THEN
+		MAC1 := SUBSTR(MAC,1,12);
+		MAC2 := '';
+        SFIS1.MacCheckByte(MAC1,v_RES);
+        SFIS1.MacCharCnt(MAC1,'0',v_0CNT);
+        SFIS1.MacCharCnt(MAC1,'F',v_FCNT);
+        IF v_RES='false' OR v_0CNT=12 OR v_FCNT=12 THEN
+   	      p_FLAG:='3';
+        END IF;
+
+		BMAC1:=SUBSTR(MAC1,1,6);
+	    SELECT COUNT(*)
+	    INTO v_BMAC1_CNT
+	    FROM SFIS1.C_MAC_T
+	    WHERE B_MAC=BMAC1 AND CUSTOMER='NVIDIA' AND TYPE_FLAG='MAC';
+
+		IF (v_BMAC1_CNT=0) THEN
+	      p_FLAG:='7';
+	    END IF;
+	  ELSE
+	    RAISE e_LENGTH_ERROR;
+
+	  END IF;
+
+	  COMPAQ.TEST_MAC_V1(MACHINE_CODE,'','',TRIM(BARCODE),TESTDATE,TESTTIME,RESULT,'0','0',TRIM(EMP),
+	                     '','','',RESERVE2,'',p_FLAG,'',MAC1,MAC2,'0',MACRES);
+
+	  IF MACRES <> '0' THEN
+	    RAISE e_MAC_ERROR;
+	  END IF;
+
+	  RES := 'OK';
+
+EXCEPTION
+  WHEN e_LENGTH_ERROR THEN
+    RES := 'THE LENGTH OF MAC ADDRESS IS WRONG';
+  WHEN e_MAC_ERROR THEN
+    RES := MACRES||' MAC ERROR';
+  WHEN OTHERS THEN
+    RES := 'FBT_MAC_V1 ERROR';
+
+END;

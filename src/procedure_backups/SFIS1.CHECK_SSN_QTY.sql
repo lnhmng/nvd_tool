@@ -1,0 +1,66 @@
+PROCEDURE             CHECK_SSN_QTY (DATA      IN     VARCHAR2,
+                                                 LINE      IN     VARCHAR2,
+                                                 MYGROUP   IN     VARCHAR2,
+                                                 RES          OUT VARCHAR2)
+--add by wenliang 20131226 for tikcet S000001QSY
+IS
+   TEMP_COUNT   NUMBER;
+   TEMP_TIME1   DATE;
+   TEMP_TIME2   DATE;
+   TEMP_TIME    DATE;
+BEGIN
+   RES := 'OK';
+
+   SELECT COUNT (*)
+     INTO TEMP_COUNT
+     FROM SFIS1.C_PTH_T
+    WHERE STATION_NAME = MYGROUP AND LINE_NAME = LINE;
+
+   IF TEMP_COUNT = 0
+   THEN
+      RES := 'MODEL ERROR';
+      RETURN;
+   END IF;
+
+   SELECT MAX (C_DATE)
+     INTO TEMP_TIME1
+     FROM SFIS1.C_PTH_T
+    WHERE STATION_NAME = MYGROUP AND LINE_NAME = LINE AND ROWNUM = 1;
+
+   SELECT NVL (TO_DATE(MAX (VR_VALUE),'YYYY/MM/DD HH24:MI:SS'), SYSDATE - 10)
+     INTO TEMP_TIME2
+     FROM SFIS1.C_PARAMETER_INI
+    WHERE     PRG_NAME = 'INPUT_TIME'
+          AND VR_CLASS = MYGROUP
+          AND VR_ITEM = LINE
+          AND ROWNUM = 1;
+
+   IF TEMP_TIME2 - TEMP_TIME1 > 0
+   THEN
+      TEMP_TIME := TEMP_TIME2;
+   ELSE
+      TEMP_TIME := TEMP_TIME1;
+   END IF;
+
+
+   SELECT COUNT (*)
+     INTO TEMP_COUNT
+     FROM SFISM4.R_SN_DETAIL_T
+    WHERE     IN_STATION_TIME >= TEMP_TIME
+          AND GROUP_NAME = MYGROUP
+          AND LINE_NAME = LINE;
+
+   IF MOD (TEMP_COUNT, 7) = 0
+   THEN
+      RES := '7 PCS,ATTENTION PLEASE!TOTAL:' || TEMP_COUNT;
+   END IF;
+
+   IF MOD (TEMP_COUNT, 25) = 0
+   THEN
+      RES := '25 PCS,ATTENTION PLEASE!TOTAL:' || TEMP_COUNT;
+   END IF;
+EXCEPTION
+   WHEN OTHERS
+   THEN
+      RES := 'OTHER ERROR ' || SUBSTR (SQLERRM, 1, 100);
+END;
